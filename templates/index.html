@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Data Science Salary Predictor</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 30px 15px;
+  }
+  .container {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    width: 100%;
+    max-width: 720px;
+    overflow: hidden;
+  }
+  .header {
+    background: linear-gradient(135deg, #0f3460, #e94560);
+    padding: 28px 32px;
+    color: white;
+    text-align: center;
+  }
+  .header h1 { font-size: 24px; font-weight: 700; }
+  .header p  { font-size: 13px; opacity: 0.85; margin-top: 6px; }
+  .form-body { padding: 28px 32px; }
+  .section-title {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #0f3460;
+    border-bottom: 2px solid #e8eef5;
+    padding-bottom: 6px;
+    margin: 22px 0 14px;
+  }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+  .field { display: flex; flex-direction: column; }
+  label { font-size: 12px; font-weight: 600; color: #444; margin-bottom: 5px; }
+  .badge { display: inline-block; font-size: 10px; padding: 2px 7px; border-radius: 20px;
+           margin-left: 6px; font-weight: 600; vertical-align: middle; }
+  .badge-discrete { background: #e8f5e9; color: #2e7d32; }
+  .badge-numeric  { background: #e3f2fd; color: #1565c0; }
+  select, input[type="number"] {
+    padding: 9px 12px;
+    border: 1.5px solid #dde3ee;
+    border-radius: 8px;
+    font-size: 13px;
+    color: #333;
+    background: #f8fafc;
+    transition: border 0.2s;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23666' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 32px;
+  }
+  input[type="number"] { background-image: none; padding-right: 12px; }
+  select:focus, input[type="number"]:focus {
+    outline: none; border-color: #0f3460;
+    box-shadow: 0 0 0 3px rgba(15,52,96,0.1); background-color: white;
+  }
+  .predict-btn {
+    width: 100%; padding: 14px;
+    background: linear-gradient(135deg, #0f3460, #e94560);
+    color: white; border: none; border-radius: 10px;
+    font-size: 16px; font-weight: 700; cursor: pointer;
+    margin-top: 24px; transition: opacity 0.2s, transform 0.1s;
+  }
+  .predict-btn:hover  { opacity: 0.92; transform: translateY(-1px); }
+  .predict-btn:active { transform: translateY(0); }
+  #result { margin-top: 20px; padding: 20px; border-radius: 10px; text-align: center; display: none; }
+  .result-success { background: linear-gradient(135deg, #e8f5e9, #f1f8e9); border: 1.5px solid #a5d6a7; }
+  .result-error   { background: #ffeaea; border: 1.5px solid #ffcdd2; }
+  .result-label { font-size: 12px; color: #666; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+  .result-value { font-size: 34px; font-weight: 800; color: #0f3460; margin: 6px 0 2px; }
+  .result-sub   { font-size: 12px; color: #888; }
+  .error-msg    { font-size: 14px; color: #c62828; }
+  @media(max-width: 520px) {
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    .form-body { padding: 20px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>💼 Data Science Salary Predictor</h1>
+    <p>Powered by Decision Tree · Predicts Annual Salary (Local Currency)</p>
+  </div>
+
+  <div class="form-body">
+
+    <div class="section-title">📅 Job Details</div>
+    <div class="grid-3">
+      <div class="field">
+        <label>Work Year <span class="badge badge-discrete">Discrete</span></label>
+        <select id="work_year">
+          <option value="" disabled selected>Select</option>
+          <option value="2020">2020</option>
+          <option value="2021">2021</option>
+          <option value="2022">2022</option>
+          <option value="2023">2023</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Experience Level <span class="badge badge-discrete">Discrete</span></label>
+        <select id="experience_level">
+          <option value="" disabled selected>Select</option>
+          <option value="0">SE – Senior</option>
+          <option value="1">MI – Mid Level</option>
+          <option value="2">EN – Entry Level</option>
+          <option value="3">EX – Executive</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Employment Type <span class="badge badge-discrete">Discrete</span></label>
+        <select id="employment_type">
+          <option value="" disabled selected>Select</option>
+          <option value="0">FT – Full Time</option>
+          <option value="1">CT – Contract</option>
+          <option value="2">FL – Freelance</option>
+          <option value="3">PT – Part Time</option>
+        </select>
+      </div>
+    </div>
+
+    <div style="margin-top:14px;">
+      <div class="field">
+        <label>Job Title <span class="badge badge-discrete">Discrete</span></label>
+        <select id="job_title">
+          <option value="" disabled selected>Select</option>
+          <option value="0">3D Computer Vision Researcher</option>
+          <option value="1">AI Developer</option>
+          <option value="2">AI Programmer</option>
+          <option value="3">AI Scientist</option>
+          <option value="4">Analytics Engineer</option>
+          <option value="5">Applied Data Scientist</option>
+          <option value="6">Applied Machine Learning Engineer</option>
+          <option value="7">Applied Machine Learning Scientist</option>
+          <option value="8">Applied Scientist</option>
+          <option value="9">Autonomous Vehicle Technician</option>
+          <option value="10">Azure Data Engineer</option>
+          <option value="11">BI Analyst</option>
+          <option value="12">BI Data Analyst</option>
+          <option value="13">BI Data Engineer</option>
+          <option value="14">BI Developer</option>
+          <option value="15">Big Data Architect</option>
+          <option value="16">Big Data Engineer</option>
+          <option value="17">Business Data Analyst</option>
+          <option value="18">Business Intelligence Engineer</option>
+          <option value="19">Cloud Data Architect</option>
+          <option value="20">Cloud Data Engineer</option>
+          <option value="21">Cloud Database Engineer</option>
+          <option value="22">Compliance Data Analyst</option>
+          <option value="23">Computer Vision Engineer</option>
+          <option value="24">Computer Vision Software Engineer</option>
+          <option value="25">Data Analyst</option>
+          <option value="26">Data Analytics Consultant</option>
+          <option value="27">Data Analytics Engineer</option>
+          <option value="28">Data Analytics Lead</option>
+          <option value="29">Data Analytics Manager</option>
+          <option value="30">Data Analytics Specialist</option>
+          <option value="31">Data Architect</option>
+          <option value="32">Data DevOps Engineer</option>
+          <option value="33">Data Engineer</option>
+          <option value="34">Data Infrastructure Engineer</option>
+          <option value="35">Data Lead</option>
+          <option value="36">Data Management Specialist</option>
+          <option value="37">Data Manager</option>
+          <option value="38">Data Modeler</option>
+          <option value="39">Data Operations Analyst</option>
+          <option value="40">Data Operations Engineer</option>
+          <option value="41">Data Quality Analyst</option>
+          <option value="42">Data Science Consultant</option>
+          <option value="43">Data Science Engineer</option>
+          <option value="44">Data Science Lead</option>
+          <option value="45">Data Science Manager</option>
+          <option value="46">Data Science Tech Lead</option>
+          <option value="47">Data Scientist</option>
+          <option value="48">Data Scientist Lead</option>
+          <option value="49">Data Specialist</option>
+          <option value="50">Data Strategist</option>
+          <option value="51">Deep Learning Engineer</option>
+          <option value="52">Deep Learning Researcher</option>
+          <option value="53">Director of Data Science</option>
+          <option value="54">ETL Developer</option>
+          <option value="55">ETL Engineer</option>
+          <option value="56">Finance Data Analyst</option>
+          <option value="57">Financial Data Analyst</option>
+          <option value="58">Head of Data</option>
+          <option value="59">Head of Data Science</option>
+          <option value="60">Head of Machine Learning</option>
+          <option value="61">Insight Analyst</option>
+          <option value="62">Lead Data Analyst</option>
+          <option value="63">Lead Data Engineer</option>
+          <option value="64">Lead Data Scientist</option>
+          <option value="65">Lead Machine Learning Engineer</option>
+          <option value="66">ML Engineer</option>
+          <option value="67">MLOps Engineer</option>
+          <option value="68">Machine Learning Developer</option>
+          <option value="69">Machine Learning Engineer</option>
+          <option value="70">Machine Learning Infrastructure Engineer</option>
+          <option value="71">Machine Learning Manager</option>
+          <option value="72">Machine Learning Research Engineer</option>
+          <option value="73">Machine Learning Researcher</option>
+          <option value="74">Machine Learning Scientist</option>
+          <option value="75">Machine Learning Software Engineer</option>
+          <option value="76">Manager Data Management</option>
+          <option value="77">Marketing Data Analyst</option>
+          <option value="78">Marketing Data Engineer</option>
+          <option value="79">NLP Engineer</option>
+          <option value="80">Power BI Developer</option>
+          <option value="81">Principal Data Analyst</option>
+          <option value="82">Principal Data Architect</option>
+          <option value="83">Principal Data Engineer</option>
+          <option value="84">Principal Data Scientist</option>
+          <option value="85">Principal Machine Learning Engineer</option>
+          <option value="86">Product Data Analyst</option>
+          <option value="87">Product Data Scientist</option>
+          <option value="88">Research Engineer</option>
+          <option value="89">Research Scientist</option>
+          <option value="90">Software Data Engineer</option>
+          <option value="91">Staff Data Analyst</option>
+          <option value="92">Staff Data Scientist</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="section-title">💰 Salary & Currency</div>
+    <div class="grid-2">
+      <div class="field">
+        <label>Salary Currency <span class="badge badge-discrete">Discrete</span></label>
+        <select id="salary_currency">
+          <option value="" disabled selected>Select</option>
+          <option value="0">AUD – Australian Dollar</option>
+          <option value="1">BRL – Brazilian Real</option>
+          <option value="2">CAD – Canadian Dollar</option>
+          <option value="3">CHF – Swiss Franc</option>
+          <option value="4">CLP – Chilean Peso</option>
+          <option value="5">CZK – Czech Koruna</option>
+          <option value="6">DKK – Danish Krone</option>
+          <option value="7">EUR – Euro</option>
+          <option value="8">GBP – British Pound</option>
+          <option value="9">HKD – Hong Kong Dollar</option>
+          <option value="10">HUF – Hungarian Forint</option>
+          <option value="11">ILS – Israeli Shekel</option>
+          <option value="12">INR – Indian Rupee</option>
+          <option value="13">JPY – Japanese Yen</option>
+          <option value="14">MXN – Mexican Peso</option>
+          <option value="15">PLN – Polish Zloty</option>
+          <option value="16">SGD – Singapore Dollar</option>
+          <option value="17">THB – Thai Baht</option>
+          <option value="18">TRY – Turkish Lira</option>
+          <option value="19">USD – US Dollar</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Salary in USD <span class="badge badge-numeric">Numeric</span></label>
+        <input type="number" id="salary_in_usd" placeholder="e.g. 100000" min="0">
+      </div>
+    </div>
+
+    <div class="section-title">🏢 Company & Location</div>
+    <div class="grid-3">
+      <div class="field">
+        <label>Company Size <span class="badge badge-discrete">Discrete</span></label>
+        <select id="company_size">
+          <option value="" disabled selected>Select</option>
+          <option value="0">S – Small</option>
+          <option value="1">M – Medium</option>
+          <option value="2">L – Large</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Employee Residence <span class="badge badge-discrete">Discrete</span></label>
+        <select id="employee_residence">
+          <option value="" disabled selected>Select</option>
+          <option value="0">AE</option><option value="1">AM</option><option value="2">AR</option>
+          <option value="3">AS</option><option value="4">AT</option><option value="5">AU</option>
+          <option value="6">BA</option><option value="7">BE</option><option value="8">BG</option>
+          <option value="9">BO</option><option value="10">BR</option><option value="11">CA</option>
+          <option value="12">CF</option><option value="13">CH</option><option value="14">CL</option>
+          <option value="15">CN</option><option value="16">CO</option><option value="17">CR</option>
+          <option value="18">CY</option><option value="19">CZ</option><option value="20">DE</option>
+          <option value="21">DK</option><option value="22">DO</option><option value="23">DZ</option>
+          <option value="24">EE</option><option value="25">EG</option><option value="26">ES</option>
+          <option value="27">FI</option><option value="28">FR</option><option value="29">GB</option>
+          <option value="30">GH</option><option value="31">GR</option><option value="32">HK</option>
+          <option value="33">HN</option><option value="34">HR</option><option value="35">HU</option>
+          <option value="36">ID</option><option value="37">IE</option><option value="38">IL</option>
+          <option value="39">IN</option><option value="40">IQ</option><option value="41">IR</option>
+          <option value="42">IT</option><option value="43">JE</option><option value="44">JP</option>
+          <option value="45">KE</option><option value="46">KW</option><option value="47">LT</option>
+          <option value="48">LU</option><option value="49">LV</option><option value="50">MA</option>
+          <option value="51">MD</option><option value="52">MK</option><option value="53">MT</option>
+          <option value="54">MX</option><option value="55">MY</option><option value="56">NG</option>
+          <option value="57">NL</option><option value="58">NZ</option><option value="59">PH</option>
+          <option value="60">PK</option><option value="61">PL</option><option value="62">PR</option>
+          <option value="63">PT</option><option value="64">RO</option><option value="65">RS</option>
+          <option value="66">RU</option><option value="67">SE</option><option value="68">SG</option>
+          <option value="69">SI</option><option value="70">SK</option><option value="71">TH</option>
+          <option value="72">TN</option><option value="73">TR</option><option value="74">UA</option>
+          <option value="75">US</option><option value="76">UZ</option><option value="77">VN</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Company Location <span class="badge badge-discrete">Discrete</span></label>
+        <select id="company_location">
+          <option value="" disabled selected>Select</option>
+          <option value="0">AE</option><option value="1">AL</option><option value="2">AM</option>
+          <option value="3">AR</option><option value="4">AS</option><option value="5">AT</option>
+          <option value="6">AU</option><option value="7">BA</option><option value="8">BE</option>
+          <option value="9">BO</option><option value="10">BR</option><option value="11">BS</option>
+          <option value="12">CA</option><option value="13">CF</option><option value="14">CH</option>
+          <option value="15">CL</option><option value="16">CN</option><option value="17">CO</option>
+          <option value="18">CR</option><option value="19">CZ</option><option value="20">DE</option>
+          <option value="21">DK</option><option value="22">DZ</option><option value="23">EE</option>
+          <option value="24">EG</option><option value="25">ES</option><option value="26">FI</option>
+          <option value="27">FR</option><option value="28">GB</option><option value="29">GH</option>
+          <option value="30">GR</option><option value="31">HK</option><option value="32">HN</option>
+          <option value="33">HR</option><option value="34">HU</option><option value="35">ID</option>
+          <option value="36">IE</option><option value="37">IL</option><option value="38">IN</option>
+          <option value="39">IQ</option><option value="40">IR</option><option value="41">IT</option>
+          <option value="42">JP</option><option value="43">KE</option><option value="44">LT</option>
+          <option value="45">LU</option><option value="46">LV</option><option value="47">MA</option>
+          <option value="48">MD</option><option value="49">MK</option><option value="50">MT</option>
+          <option value="51">MX</option><option value="52">MY</option><option value="53">NG</option>
+          <option value="54">NL</option><option value="55">NZ</option><option value="56">PH</option>
+          <option value="57">PK</option><option value="58">PL</option><option value="59">PR</option>
+          <option value="60">PT</option><option value="61">RO</option><option value="62">RU</option>
+          <option value="63">SE</option><option value="64">SG</option><option value="65">SI</option>
+          <option value="66">SK</option><option value="67">TH</option><option value="68">TR</option>
+          <option value="69">UA</option><option value="70">US</option><option value="71">VN</option>
+        </select>
+      </div>
+    </div>
+
+    <div style="margin-top:14px;">
+      <div class="field" style="max-width:240px;">
+        <label>Remote Ratio <span class="badge badge-discrete">Discrete</span></label>
+        <select id="remote_ratio">
+          <option value="" disabled selected>Select</option>
+          <option value="0">0% – On-Site</option>
+          <option value="50">50% – Hybrid</option>
+          <option value="100">100% – Remote</option>
+        </select>
+      </div>
+    </div>
+
+    <button class="predict-btn" onclick="predict()">🔮 Predict Salary</button>
+
+    <div id="result">
+      <div id="result-inner"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const currencySymbols = {
+  '0':'A$','1':'R$','2':'C$','3':'CHF ','4':'CLP$','5':'Kč ',
+  '6':'kr ','7':'€','8':'£','9':'HK$','10':'Ft ','11':'₪',
+  '12':'₹','13':'¥','14':'MX$','15':'zł ','16':'S$',
+  '17':'฿','18':'₺','19':'$'
+};
+const currencyCodes = {
+  '0':'AUD','1':'BRL','2':'CAD','3':'CHF','4':'CLP','5':'CZK',
+  '6':'DKK','7':'EUR','8':'GBP','9':'HKD','10':'HUF','11':'ILS',
+  '12':'INR','13':'JPY','14':'MXN','15':'PLN','16':'SGD',
+  '17':'THB','18':'TRY','19':'USD'
+};
+
+async function predict() {
+  const ids = ['work_year','experience_level','employment_type','job_title',
+                'salary_currency','employee_residence','remote_ratio',
+                'company_location','company_size'];
+
+  for (let id of ids) {
+    if (!document.getElementById(id).value) {
+      showError('Please fill all fields before predicting.');
+      return;
+    }
+  }
+
+  if (!document.getElementById('salary_in_usd').value) {
+    showError('Please enter Salary in USD.');
+    return;
+  }
+
+  const btn = document.querySelector('.predict-btn');
+  btn.textContent = '⏳ Predicting...';
+  btn.disabled = true;
+
+  const currVal = document.getElementById('salary_currency').value;
+
+  const payload = {
+    work_year:          document.getElementById('work_year').value,
+    experience_level:   document.getElementById('experience_level').value,
+    employment_type:    document.getElementById('employment_type').value,
+    job_title:          document.getElementById('job_title').value,
+    salary_currency:    currVal,
+    salary_in_usd:      document.getElementById('salary_in_usd').value,
+    employee_residence: document.getElementById('employee_residence').value,
+    remote_ratio:       document.getElementById('remote_ratio').value,
+    company_location:   document.getElementById('company_location').value,
+    company_size:       document.getElementById('company_size').value,
+  };
+
+  try {
+    const res  = await fetch('/predict', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    const div   = document.getElementById('result');
+    const inner = document.getElementById('result-inner');
+    div.style.display = 'block';
+
+    if (data.status === 'success') {
+      div.className = 'result-success';
+      const symbol = currencySymbols[currVal] || '$';
+      const code   = currencyCodes[currVal]   || 'USD';
+      const amount = new Intl.NumberFormat('en-US', {maximumFractionDigits:0}).format(data.predicted_salary);
+      inner.innerHTML = `
+        <div class="result-label">Predicted Annual Salary</div>
+        <div class="result-value">${symbol}${amount}</div>
+        <div class="result-sub">Currency: ${code}</div>`;
+    } else {
+      showError(data.error);
+    }
+  } catch(e) {
+    showError('Network error: ' + e.message);
+  }
+
+  btn.textContent = '🔮 Predict Salary';
+  btn.disabled = false;
+}
+
+function showError(msg) {
+  const div = document.getElementById('result');
+  div.style.display = 'block';
+  div.className = 'result-error';
+  document.getElementById('result-inner').innerHTML = `<div class="error-msg">❌ ${msg}</div>`;
+}
+</script>
+</body>
+</html>
